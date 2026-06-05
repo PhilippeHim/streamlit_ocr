@@ -40,7 +40,13 @@ def build_macro_job_manager(project_root: Path) -> MacroJobManager:
         screenshots_directory=project_root / "screenshots",
         profiles_directory=project_root / "data" / "browser_profiles",
     )
-    return MacroJobManager(RunMacroUseCase(browser))
+    return MacroJobManager(
+        RunMacroUseCase(
+            browser=browser,
+            ocr=OCRService(),
+            reconstructor=TextReconstructor(),
+        )
+    )
 
 
 def build_macro_repository(project_root: Path) -> MacroRepository:

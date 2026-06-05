@@ -10,6 +10,7 @@ from typing import Any
 from urllib.parse import urlparse
 
 from domain.exceptions import InvalidURLError
+from domain.models import OCRDocument
 
 
 class MacroActionType(StrEnum):
@@ -84,6 +85,7 @@ class MacroDefinition:
     viewport_width: int = 1440
     viewport_height: int = 900
     persist_session: bool = True
+    perform_ocr: bool = False
 
     @classmethod
     def from_dict(cls, raw: dict[str, Any]) -> MacroDefinition:
@@ -100,6 +102,7 @@ class MacroDefinition:
             viewport_width=int(raw.get("viewport_width", 1440)),
             viewport_height=int(raw.get("viewport_height", 900)),
             persist_session=bool(raw.get("persist_session", True)),
+            perform_ocr=bool(raw.get("perform_ocr", False)),
         )
         macro.validate()
         return macro
@@ -132,6 +135,7 @@ class MacroDefinition:
             "viewport_width": self.viewport_width,
             "viewport_height": self.viewport_height,
             "persist_session": self.persist_session,
+            "perform_ocr": self.perform_ocr,
             "actions": [
                 {
                     key: value
@@ -159,6 +163,7 @@ class MacroRunResult:
     session_directory: Path
     duration_seconds: float
     stopped_by_user: bool = False
+    document: OCRDocument | None = None
 
 
 def _optional_text(value: Any) -> str | None:
@@ -166,4 +171,3 @@ def _optional_text(value: Any) -> str | None:
         return None
     normalized = str(value).strip()
     return normalized or None
-

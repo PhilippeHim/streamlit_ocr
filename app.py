@@ -11,9 +11,11 @@ from application.job_manager import CaptureJobManager
 from domain.models import CaptureSettings, JobStatus
 from services.container import build_job_manager
 from services.export_service import ExportService
+from services.preferences_service import PreferencesService
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 LOG_FILE = PROJECT_ROOT / "data" / "streamlit_ocr.log"
+PREFERENCES = PreferencesService(PROJECT_ROOT / "data" / "preferences.json")
 LOG_FILE.parent.mkdir(parents=True, exist_ok=True)
 logging.basicConfig(
     level=logging.INFO,
@@ -40,6 +42,7 @@ def start_capture(manager: CaptureJobManager) -> None:
             scroll_delay=st.session_state.scroll_delay,
             max_duration=st.session_state.max_duration,
         )
+        PREFERENCES.save_last_url(settings.url)
         manager.start(settings)
     except (ValueError, RuntimeError) as exc:
         st.error(str(exc))
@@ -116,7 +119,7 @@ with st.sidebar:
     st.header("Paramètres")
     st.text_input(
         "URL",
-        value="https://example.com",
+        value=PREFERENCES.load_last_url(),
         key="url",
         disabled=is_active,
     )

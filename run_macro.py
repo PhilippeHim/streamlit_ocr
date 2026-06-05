@@ -9,7 +9,9 @@ from pathlib import Path
 from threading import Event
 
 from application.macro_use_cases import MacroRepository, RunMacroUseCase
+from domain.text_reconstruction import TextReconstructor
 from services.macro_browser_service import MacroBrowserService
+from services.ocr_service import OCRService
 
 PROJECT_ROOT = Path(__file__).resolve().parent
 
@@ -47,7 +49,11 @@ def main() -> int:
         screenshots_directory=PROJECT_ROOT / "screenshots",
         profiles_directory=PROJECT_ROOT / "data" / "browser_profiles",
     )
-    result = RunMacroUseCase(browser).execute(
+    result = RunMacroUseCase(
+        browser=browser,
+        ocr=OCRService(),
+        reconstructor=TextReconstructor(),
+    ).execute(
         macro,
         Event(),
         lambda message, current, total: logging.info(
@@ -60,9 +66,12 @@ def main() -> int:
         len(result.screenshots),
         result.session_directory,
     )
+    if result.document:
+        text_path = result.session_directory / "ocr.txt"
+        text_path.write_text(result.document.text, encoding="utf-8")
+        logging.info("Texte OCR enregistré dans %s", text_path)
     return 0
 
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

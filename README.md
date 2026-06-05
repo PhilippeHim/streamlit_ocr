@@ -98,78 +98,59 @@ Python 3.12.
 Le bouton d'arrêt envoie une demande au processus de capture. Playwright
 finalise ensuite la vidéo avant le traitement OpenCV et OCR.
 
+La dernière URL validée au démarrage d'une capture est enregistrée localement
+dans `data/preferences.json` et proposée automatiquement au prochain lancement.
+
 ## Macros et captures PNG
 
 Ouvrir la page **Macros et captures** dans le menu Streamlit. Ce mode ne crée
 pas de vidéo et n'exécute pas d'OCR : il pilote directement Chromium puis
 enregistre les captures demandées.
 
+La page utilise un seul champ **URL du site pour l'aperçu et Playwright**.
+Cette valeur alimente à la fois l'iframe et le champ `start_url` de la macro,
+puis elle est proposée à nouveau au prochain lancement.
+
 L'onglet **Aperçu du site** affiche une iframe. Certains sites la bloquent avec
 leur politique de sécurité ; cela n'empêche pas nécessairement Playwright de
 les ouvrir dans une fenêtre Chromium séparée.
 
-Exemple de macro :
+Les réglages sont présentés sous forme de champs :
 
-```json
-{
-  "name": "classement_jeu",
-  "start_url": "https://example.com",
-  "headless": true,
-  "timeout_seconds": 60,
-  "viewport_width": 1440,
-  "viewport_height": 900,
-  "persist_session": true,
-  "actions": [
-    {
-      "action": "click",
-      "selector": "a[href='/classement']",
-      "duration_ms": 1000
-    },
-    {
-      "action": "screenshot",
-      "name": "classement_1",
-      "full_page": true
-    },
-    {
-      "action": "click",
-      "selector": "button.next",
-      "duration_ms": 1000
-    },
-    {
-      "action": "screenshot",
-      "name": "classement_2",
-      "full_page": true
-    }
-  ]
-}
-```
+- nom de la macro ;
+- délai maximal par action ;
+- largeur et hauteur du navigateur ;
+- affichage facultatif de Chromium pendant le test ;
+- conservation facultative de la session de connexion.
+- OCR facultatif des captures PNG, sans passer par une vidéo.
 
-Actions disponibles :
+Le parcours est construit dans un tableau dynamique. Une ligne correspond à
+une action et les boutons du tableau permettent d'ajouter ou supprimer des
+lignes.
 
-| Action | Paramètres principaux | Effet |
+| Action affichée | Paramètres à renseigner | Effet |
 | --- | --- | --- |
-| `goto` | `value` | Ouvre une autre URL |
-| `click` | `selector` | Clique sur un élément |
-| `fill` | `selector`, `value` | Remplit un champ |
-| `press` | `selector`, `value` | Envoie une touche, par exemple `Enter` |
-| `wait` | `duration_ms` | Attend une durée |
-| `scroll` | `value` | Défile verticalement en pixels |
-| `screenshot` | `name`, `full_page` | Enregistre une image PNG |
+| Capture PNG | nom, page entière | Enregistre une image |
+| Clic | sélecteur CSS, délai | Clique sur un élément |
+| Saisie de texte | sélecteur CSS, valeur | Remplit un champ |
+| Touche clavier | sélecteur CSS, valeur | Envoie une touche comme `Enter` |
+| Attente | délai en millisecondes | Attend avant l'étape suivante |
+| Défilement | valeur en pixels, délai | Défile verticalement |
+| Ouvrir une URL | valeur contenant l'URL | Navigue vers une autre page |
 
-Les sélecteurs utilisent la syntaxe Playwright/CSS. Pour tester une connexion
-manuelle, cocher **Afficher la fenêtre Chromium pendant ce test**. Lorsque
-`persist_session` vaut `true`, les cookies et données de session sont conservés
-dans `data/browser_profiles/`.
+Les sélecteurs utilisent la syntaxe CSS de Playwright. Pour tester une
+connexion manuelle, cocher **Afficher la fenêtre Chromium pendant le test**.
+Lorsque **Conserver la session de connexion** est activé, les cookies et données
+de session sont enregistrés dans `data/browser_profiles/`. Ne fermez pas la
+fenêtre Chromium avant la fin de l'exécution.
 
-Le sélecteur d'un exemple doit toujours être remplacé par un élément réellement
-présent sur le site ciblé. Par exemple, `a[href='/page-2']` ne fonctionne que
-si la page contient exactement ce lien. Le bouton **Charger exemple sûr**
-génère une macro sans clic, compatible avec toute URL publique. Lors d'un test
-avec Chromium visible, ne fermez pas sa fenêtre avant la fin de la macro.
+Le format JSON reste utilisé uniquement en interne pour sauvegarder et
+planifier les macros ; il n'est plus nécessaire de le modifier manuellement.
 
-Ne placez pas de mot de passe directement dans le JSON. Une valeur telle que
-`${GAME_PASSWORD}` est lue depuis une variable d'environnement au moment de
-l'exécution.
+Lorsque **OCRiser les captures PNG** est activé, Tesseract traite chaque image
+créée par les étapes de capture. Le texte est fusionné et peut être téléchargé
+en TXT, Markdown ou CSV. En exécution planifiée, une copie `ocr.txt` est aussi
+écrite dans le dossier de la session.
 
 ### Exécution en ligne de commande
 

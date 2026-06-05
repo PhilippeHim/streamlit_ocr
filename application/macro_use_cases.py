@@ -6,15 +6,24 @@ import json
 from pathlib import Path
 from threading import Event
 
-from application.ports import MacroBrowserPort, ProgressCallback
+from application.ports import MacroBrowserPort, OCRPort, ProgressCallback
 from domain.macro_models import MacroDefinition, MacroRunResult
+from domain.models import OCRDocument
+from domain.text_reconstruction import TextReconstructor
 
 
 class RunMacroUseCase:
     """Execute a validated macro through a browser adapter."""
 
-    def __init__(self, browser: MacroBrowserPort) -> None:
+    def __init__(
+        self,
+        browser: MacroBrowserPort,
+        ocr: OCRPort,
+        reconstructor: TextReconstructor,
+    ) -> None:
         self.browser = browser
+        self.ocr = ocr
+        self.reconstructor = reconstructor
 
     def execute(
         self,
@@ -22,7 +31,29 @@ class RunMacroUseCase:
         stop_event: Event,
         progress: ProgressCallback,
     ) -> MacroRunResult:
-        return self.browser.run_macro(macro, stop_event, progress)
+        result = self.browser.run_macro(macro, stop_event, progress)
+        if not macro.perform_ocr or not result.screenshots:
+            return result
+
+        screenshots = [
+            (path, float(index))
+            for index, path in enumerate(result.screenshots)
+        ]
+        frames = self.ocr.recognize_frames(screenshots, progress)
+        document = OCRDocument(
+            title=f"OCR - {macro.name}",
+            source_url=macro.start_url,
+            text=self.reconstructor.reconstruct(frames),
+            frames=frames,
+        )
+        return MacroRunResult(
+            macro_name=result.macro_name,
+            screenshots=result.screenshots,
+            session_directory=result.session_directory,
+            duration_seconds=result.duration_seconds,
+            stopped_by_user=result.stopped_by_user,
+            document=document,
+        )
 
 
 class MacroRepository:
@@ -47,4 +78,3 @@ class MacroRepository:
         if not isinstance(raw, dict):
             raise ValueError("La configuration de macro doit être un objet JSON.")
         return MacroDefinition.from_dict(raw)
-
