@@ -1,0 +1,11 @@
+name: streamlit_ocr
+channels:
+  - conda-forge
+dependencies:
+  - python=3.12
+  - ffmpeg>=7
+  - tesseract>=5
+  - pip
+  - pip:
+      - -r requirements.txt
+
