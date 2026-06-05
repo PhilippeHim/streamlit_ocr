@@ -1,0 +1,36 @@
+{
+  "name": "validation_macro",
+  "start_url": "http://127.0.0.1:8765/tests/fixtures/scroll_page.html",
+  "headless": true,
+  "timeout_seconds": 15,
+  "viewport_width": 1200,
+  "viewport_height": 700,
+  "persist_session": false,
+  "actions": [
+    {
+      "action": "screenshot",
+      "name": "accueil",
+      "full_page": false
+    },
+    {
+      "action": "click",
+      "selector": "#show-result",
+      "duration_ms": 300
+    },
+    {
+      "action": "screenshot",
+      "name": "apres_clic",
+      "full_page": false
+    },
+    {
+      "action": "scroll",
+      "value": 900,
+      "duration_ms": 300
+    },
+    {
+      "action": "screenshot",
+      "name": "page_complete",
+      "full_page": true
+    }
+  ]
+}

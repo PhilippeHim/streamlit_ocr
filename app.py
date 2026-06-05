@@ -94,10 +94,10 @@ def render_result(manager: CaptureJobManager) -> None:
         use_container_width=True,
     )
     columns[2].download_button(
-        "Télécharger PDF",
-        exporter.to_pdf(result.document),
-        file_name="capture_ocr.pdf",
-        mime="application/pdf",
+        "Télécharger CSV",
+        exporter.to_csv(result.document),
+        file_name="capture_ocr.csv",
+        mime="text/csv",
         use_container_width=True,
     )
 
@@ -170,4 +170,3 @@ def live_panel() -> None:
 
 
 live_panel()
-

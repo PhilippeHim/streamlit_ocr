@@ -1,14 +1,9 @@
-"""TXT, Markdown and PDF export adapter."""
+"""TXT, Markdown and CSV export adapter."""
 
 from __future__ import annotations
 
-from io import BytesIO
-from xml.sax.saxutils import escape
-
-from reportlab.lib.pagesizes import A4
-from reportlab.lib.styles import getSampleStyleSheet
-from reportlab.lib.units import mm
-from reportlab.platypus import Paragraph, SimpleDocTemplate, Spacer
+import csv
+from io import StringIO
 
 from domain.exceptions import ExportError
 from domain.models import OCRDocument
@@ -28,30 +23,34 @@ class ExportService:
         )
         return content.encode("utf-8")
 
-    def to_pdf(self, document: OCRDocument) -> bytes:
-        buffer = BytesIO()
+    def to_csv(self, document: OCRDocument) -> bytes:
+        """Serialize reconstructed lines as an Excel-compatible UTF-8 CSV."""
+        buffer = StringIO(newline="")
         try:
-            pdf = SimpleDocTemplate(
+            writer = csv.writer(
                 buffer,
-                pagesize=A4,
-                leftMargin=18 * mm,
-                rightMargin=18 * mm,
-                topMargin=18 * mm,
-                bottomMargin=18 * mm,
-                title=document.title,
+                delimiter=";",
+                quotechar='"',
+                quoting=csv.QUOTE_MINIMAL,
+                lineterminator="\r\n",
             )
-            styles = getSampleStyleSheet()
-            story = [
-                Paragraph(escape(document.title), styles["Title"]),
-                Paragraph(f"Source : {escape(document.source_url)}", styles["Italic"]),
-                Spacer(1, 8 * mm),
-            ]
-            paragraphs = document.text.split("\n") or [""]
-            for paragraph in paragraphs:
-                story.append(Paragraph(escape(paragraph) or " ", styles["BodyText"]))
-                story.append(Spacer(1, 2 * mm))
-            pdf.build(story)
-        except Exception as exc:
-            raise ExportError(f"La génération du PDF a échoué: {exc}") from exc
-        return buffer.getvalue()
+            writer.writerow(
+                ["titre", "source", "date_creation", "numero_ligne", "texte"]
+            )
+            created_at = document.created_at.isoformat(sep=" ", timespec="seconds")
+            for index, line in enumerate(document.text.splitlines() or [""], start=1):
+                writer.writerow(
+                    [
+                        document.title,
+                        document.source_url,
+                        created_at,
+                        index,
+                        line,
+                    ]
+                )
+        except (csv.Error, ValueError) as exc:
+            raise ExportError(f"La génération du fichier CSV a échoué : {exc}") from exc
+
+        # utf-8-sig adds a BOM so desktop Excel detects accented text correctly.
+        return buffer.getvalue().encode("utf-8-sig")
 

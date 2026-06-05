@@ -7,6 +7,7 @@ from pathlib import Path
 from threading import Event
 from typing import Protocol
 
+from domain.macro_models import MacroDefinition, MacroRunResult
 from domain.models import CaptureArtifact, CaptureSettings, OCRDocument, OCRFrame
 
 ProgressCallback = Callable[[str, float, float], None]
@@ -20,6 +21,16 @@ class BrowserCapturePort(Protocol):
         progress: ProgressCallback,
     ) -> CaptureArtifact:
         """Capture a scrolling web page and return its video files."""
+
+
+class MacroBrowserPort(Protocol):
+    def run_macro(
+        self,
+        macro: MacroDefinition,
+        stop_event: Event,
+        progress: ProgressCallback,
+    ) -> MacroRunResult:
+        """Execute browser actions and return screenshot artifacts."""
 
 
 class FrameExtractorPort(Protocol):
@@ -48,6 +59,5 @@ class ExportPort(Protocol):
     def to_markdown(self, document: OCRDocument) -> bytes:
         """Serialize a document as Markdown."""
 
-    def to_pdf(self, document: OCRDocument) -> bytes:
-        """Serialize a document as PDF."""
-
+    def to_csv(self, document: OCRDocument) -> bytes:
+        """Serialize a document as CSV."""
